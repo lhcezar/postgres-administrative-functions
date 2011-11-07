@@ -1,0 +1,18 @@
+include globals
+head
+    meta(http-equiv="Content-Type", content="text/html; charset=UTF-8")
+    meta(name="viewport", content="width=1024, user=scalable=no")
+    link(rel="stylesheet", href="#{DECKJS}/core/deck.core.css")
+    each file in extensions
+        link(rel="stylesheet", href="#{DECKJS}/extensions/#{file}.css")
+    link(rel="stylesheet", id="style-theme-link", href="#{DECKJS}/themes/style/neon.css")
+    link(rel="stylesheet", id="transition-theme-link", href="#{DECKJS}/themes/transition/fade.css")
+    link(rel="stylesheet", href="talk.css")
+    script(src="#{DECKJS}/modernizr.custom.js")
+    script(src="#{DECKJS}/jquery-1.6.4.min.js")
+    script(src="scripts/jquery.snippet.min.js")
+    link(rel="stylesheet", href="scripts/jquery.snippet.min.css")
+script
+    $(document).ready(function(){
+        $('pre.sql').snippet('sql',{style:'pablo',showNum:true, menu:true})
+    })
