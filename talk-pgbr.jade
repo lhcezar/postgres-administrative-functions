@@ -1,0 +1,344 @@
+- var palestra = "\# \\dfS pg_*: Um passeio pelas funções administrativas do PostgreSQL"
+- var palestrante = "Leonardo Cezar"
+- var evento = "Conferência Brasileira de PostgreSQL"
+- var xlog_ft = ""
+
+html(lang="en")
+    include head
+    body.deck-container
+        <!-- begin talk -->
+        section.slide
+            h1(style='font-size:2.5em')
+               =palestra
+
+        section.slide
+            h2 Características do catálogo
+            ol
+                li.slide
+                    h3 Armazena metadados da instância
+                    p Extenso conjunto de informações distribuídas em tabelas e views de sistema
+                        ul
+                            li Definição de objetos (tabelas, atributos, índices, tipos, &c)
+                            li Estatísticas do banco de dados
+                li.slide
+                    h3 Organizado e padronizado
+                    p Convenção de nomes simples e consistente
+                    table.info
+                        tr
+                            th sufixo
+                            th descrição
+                        tr
+                            td pg_
+                            td objeto de catálogo (reservado apenas para <em>schema</em>)
+                        tr
+                            td stat_
+                            td Informação de estatística
+                        tr
+                            td io_
+                            td eventos de E/S
+                        tr
+                            td ts_
+                            td configurações de FTS
+                    ul
+                        li  Ex.: <em>pg_catalog,  pg_stat_activity,  pg_statio_user</em>
+        section.slide
+            h2 Características do catálogo (cont.)
+            ol
+                li.slide
+                    h3 Compreensível
+                    p Dicionário de simples entendimento e manipulação
+                li.slide
+                    h3 Extensível
+                    p Com pouco esforço é possível adicionar novas funcionalidades (funções, operadores, &c)
+                li.slide
+                    h3 Completo
+                    p Além do acesso aos metadados, permite analisar arquivos de dados
+
+        section.slide
+            h2 Informações sobre o catálogo
+            ol
+                li.slide 
+                    h3 2331 funções de sistema
+                li.slide 
+                    h3 86 funções estatísticas
+                li.slide 
+                    h3 36 views administrativas
+                li.slide 
+                    h3 48 tabelas de sistema
+                li.slide 
+                    h3 71 objetos no <em>information_schema</em> (ISO/IEC 9075-11:2008)
+        section.slide
+            h2 Sobre o nome da palestra
+            ol
+                    pre.sql.
+                       \SELECT routine_schema, routine_name, data_type 
+                         FROM information_schema.routines
+                    p OU
+                    pre.
+                        postgres=\# \\dfS+
+                    pre
+                       |   Schema   |         Name               |     Result data type     |
+                       |-----------+----------------------------+--------------------------|
+                       | pg_catalog | pg_database_size           | bigint                   |
+                       | pg_catalog | pg_database_size           | bigint                   |
+                       | pg_catalog | pg_describe_object         | text                     |
+                       | pg_catalog | pg_encoding_max_length     | integer                  |
+                       | pg_catalog | pg_encoding_to_char        | name                     |
+                       | pg_catalog | pg_extension_config_dump   | void                     |
+                       | pg_catalog | pg_function_is_visible     | boolean                  |
+        section.slide
+            h2 Tipos de fun&ccedil;&otilde;es
+            ol
+                li.slide
+                    h3 Funções administrativas
+                    p  - Obter informações de objetos do banco de dados através do catálogo
+                li.slide 
+                    h3 Funções estatísticas
+                    p  - Monitorar estatísticas de atividade do servidor
+                li.slide
+                    h3 Funções WAL
+                    p - Manipular e obter informações do log de transações (<em>aka</em> WAL)
+        section.slide
+            h2 Funções administrativas
+            ol
+                    h3 Ex.: obtendo informações de um arquivo
+                    pre.sql
+                        \SELECT current_setting('config_file');
+                    pre
+                       |            current_setting                
+                       | ----------------------------------------------
+                       |  /Library/PostgreSQL/8.4/data/postgresql.conf
+                    pre.sql.
+                        \SELECT now() - modification AS "última modificação"
+                          FROM pg_stat_file(current_setting('config_file'));
+                    pre
+                        | -[ RECORD 1 ]------+-----------------------
+                        | última modificação | 5 days 17:18:21.507422
+
+        section.slide
+            h2 Funções administrativas
+            ol
+                    h3 Ex.: Tempo de vida do servidor
+                    pre.sql
+                        | \SELECT format('%s, up %s, %s users, cache hit ratio: %% %s',
+                        |    LOCALTIME, (CURRENT_DATE - date_trunc('days', pg_postmaster_start_time())),
+                        |    pg_stat_get_db_numbackends(oid),
+                        |    round(( pg_stat_get_db_blocks_hit(oid)::float 
+                        |         / (pg_stat_get_db_blocks_fetched(oid)
+                        |          + pg_stat_get_blocks_hit(oid) + 1) * 100)::numeric,2)) AS "uptime"
+                        |  FROM pg_catalog.pg_database
+                        | WHERE datname = current_database();
+                    pre
+                       | -[ RECORD 1 ]--------------------------------------------------
+                       | uptime | 17:42:52, up 8 days, 2 users, cache hit ratio: % 81.61
+
+        section.slide
+            h2 Funções administrativas
+            ol
+                    h3 Parece, mas não é...
+                    pre.sql.
+                        \SELECT pg_relation_size('foobar') AS falso, 
+                               pg_table_size('foobar') AS verdadeiro;
+                    pre.
+                        +--------+------------+
+                        | falso  | verdadeiro |
+                        +--------+------------+
+                        | 368640 |     393216 |
+                        +--------+------------+
+        section.slide
+            h2 Funções administrativas
+            ol
+                    h3 Parece, mas não é...
+                    pre.sql.
+                        \SELECT pg_relation_size('foobar','fsm' /* ou vm */)
+                               ,pg_total_relation_size('foobar');
+                    pre.
+                        +------------------+------------------------+
+                        | pg_relation_size | pg_total_relation_size |
+                        +------------------+------------------------+
+                        |            24576 |                 393216 |
+                        +------------------+------------------------+
+        section.slide
+            h2 Funções administrativas
+            ol
+                h3 Outras funções administrativas
+                    table.info
+                        tr
+                            td 
+                                em função
+                            td 
+                                em resultado
+                        tr
+                            td SELECT pg_database_size('postgres')
+                            td 6759224
+                        tr
+                            td SELECT pg_indexes_size('foobar')
+                            td 245760
+                        tr
+                            td SELECT pg_size_pretty('100024')
+                            td 98 kB  
+                        tr
+                            td SELECT pg_relation_filepath('foobar')
+                            td base/12180/16393
+
+
+        section.slide
+            h2 Funções administrativas - <em>WAL</em>
+            ol
+                h3 Ex.: Obtendo o registro atual do XLOG
+                pre.sql 
+                    \SELECT pg_current_xlog_insert_location();
+                pre
+                  | pg_current_xlog_insert_location 
+                  | ---------------------------------
+                  | 0/11570578
+
+        section.slide
+            h2 Funções administrativas - <em>WAL</em>
+            ol
+                h3 Obtendo <em>offset</em> do registro atual do XLOG
+                pre.sql.
+                    \SELECT CAST(X'570578' AS INTEGER) /* x = 010101110000010101111000 */
+                        AS file_offset;
+                p OU
+                pre.sql.
+                    \SELECT file_name, file_offset 
+                      FROM pg_xlogfile_name_offset(pg_current_xlog_location());
+                pre.
+                    +--------------------------+-------------+
+                    |        file_name         | file_offset |
+                    +--------------------------+-------------+
+                    | 000000010000000000000011 |    5703032  |
+                    +--------------------------+-------------+
+        section.slide
+            h2 Funções administrativas - <em>WAL</em>
+            ol
+                li.slide
+                    h3 Ex.: Obtendo informações do LOG
+                    pre.sql.
+                        WITH RECURSIVE xlog(i,c) AS  
+                        (VALUES (0,pg_current_xlog_location())
+                          UNION ALL 
+                        \SELECT generate_series(1,
+                            (((pg_xlogfile_name_offset(
+                                    pg_current_xlog_location())).file_offset / 16777216.) * 100
+                            )::int), NULL
+                        )
+        section.slide
+            h2 Funções administrativas - <em>WAL</em>
+            ol
+                li.slide
+                    h3 Ex.: Obtendo informações XLOG (cont)
+                    pre.sql.
+                            \SELECT rpad(array_to_string(array_agg(
+                                    regexp_replace(i::varchar,'\\d{1,3}',U&'\\2593') 
+                                    ),'',''),100,U\&'\\2591')
+                            AS "Gráfico de ocupação do XLOG"
+                            FROM xlog
+                    pre.
+                       +----------------------------------------------------------------------------+
+                       |                       Gráfico de ocupação do XLOG                          |
+                       +----------------------------------------------------------------------------+
+                       | ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  |
+                       +----------------------------------------------------------------------------+
+        section.slide
+            h2 Funções administrativas
+            ol
+                h3 Outras funções do WAL
+                    table.info
+                        tr
+                            td 
+                                em função
+                            td 
+                                em resultado
+                        tr
+                            td SELECT pg_switch_xlog()
+                            td  0/F47DFF8
+                        tr
+                            td SELECT pg_create_restore_point(CURRENT_DATE::text);
+                            td 0/10000110
+                        tr
+                            td SELECT pg_xlog_replay_pause()
+                            td void
+                        tr
+                            td SELECT pg_xlog_replay_resume()
+                            td void
+        section.slide
+            h2 Funções de estatísticas
+            ol
+                li.slide
+                    h3 Ex.: Obtendo informações E/S
+                    pre.sql.
+                        SELECT round(( pg_stat_get_db_blocks_hit(oid)::float
+                        / (pg_stat_get_db_blocks_fetched(oid)
+                        + pg_stat_get_blocks_hit(oid) + 1) * 100)::numeric,2) AS "hit ratio"
+                        FROM pg_catalog.pg_database;
+                    pre.
+                        +-----------+-----------+
+                        |  datname  | hit ratio |
+                        +-----------+-----------+
+                        | postgres  |     96.67 |
+                        +-----------+-----------+
+
+        section.slide
+            h2 Funções estatísticas
+            ol
+                h3 Ex.: Obtendo informações de um <em>backend</em>:
+                pre.sql.
+                    SELECT usesysid, application_name, backend_start, waiting 
+                      FROM pg_stat_get_activity(pg_backend_pid())
+                pre.
+                    +----------+------------------+-------------------------------+---------+
+                    | usesysid | application_name |         backend_start         | waiting |
+                    +----------+------------------+-------------------------------+---------+
+                    |       10 | psql             | 2011-11-03 12:14:25.966554-02 | f       |
+                    +----------+------------------+-------------------------------+---------+
+
+        section.slide
+            h2 Funções estatísticas
+            ol
+                h3 Outras funções de estatísticas
+                    table.info
+                        tr
+                            td 
+                                em função
+                            td 
+                                em resultado
+                        tr
+                            td SELECT pg_stat_get_bgwriter_requested_checkpoints();
+                            td 36
+                        tr
+                            td SELECT pg_stat_get_buf_written_backend();
+                            td 6
+                        tr
+                            td SELECT pg_stat_get_backend_waiting(1023);
+                            td false
+ 
+        section.slide
+            h2 Referências
+            ol
+                li 
+                    h3 http://www.postgresql.org
+                li 
+                    h3 http://www.postgresql.org/docs/9.1/interactive/functions-admin.html
+                li
+                    h3 http://www.postgresql.org/docs/9.1/interactive/monitoring-stats.html
+        section.slide
+            h1(style='font-size:2.5em')
+                \SELECT pg_terminate_backend(pg_backend_pid());
+
+        <!-- end talk -->
+        p.deck-status
+            span.deck-status-current
+            /
+            span.deck-status-total
+        footer Leonardo Cezar - Confer&ecirc;ncia Brasileira de PostgreSQL
+        form(action=".", method="get").goto-form
+            label(for='goto-slide') Slide:
+                input#goto-slide(type='number', name='slidenum')
+                input(type='submit', value='transportar')
+    include foot
+    script 
+        $(function(){
+            $.deck('.slide')
+        })

@@ -1,0 +1,18 @@
+.deck-container footer{
+    position: absolute;
+    color: #888;
+    bottom: 10px!important;
+    left: 5px;
+    z-index: 3;
+    width:99%;
+    text-align:center;
+    clear:both;
+}
+.info td{
+    border:1px solid white!important;
+    padding: 5px!important;
+    min-width:100px;
+}
+.info tr th{
+    border:1px solid white!important;
+}
